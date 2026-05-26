@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 Racing Simulator</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+    user-select: none;
+}
+
+body {
+    overflow: hidden;
+    background: #87ceeb;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    color: white;
+    padding: 20px;
+    z-index: 10;
+}
+
+#speed {
+    font-size: 60px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+#lap {
+    font-size: 28px;
+    margin-top: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+#controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.75);
+    padding: 18px;
+    border-radius: 14px;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+#hud-top-right {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+    pointer-events: auto; 
+}
+
+.hud-back-btn {
+    background: #475569;
+    color: #ffffff;
+    border: 2px solid #94a3b8;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+.hud-back-btn:hover { background: #64748b; transform: scale(1.05); }
+
+#leaderboard {
+    width: 340px;
+    background: rgba(0,0,0,0.72);
+    padding: 24px;
+    border-radius: 18px;
+}
+
+#leaderboard h2 {
+    color: #ff3030;
+    margin-bottom: 14px;
+    font-size: 30px;
+}
+
+#leaderboard li {
+    margin: 8px 0;
+    font-size: 18px;
+}
+
+.personal-stats-panel {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #475569;
+    color: #38bdf8;
+    font-weight: bold;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+#message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ff1e27;
+    color: white;
+    padding: 20px 50px;
+    border-radius: 12px;
+    font-size: 36px;
+    font-weight: bold;
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.6);
+    display: none;
+    z-index: 100;
+}
+
+/* ==========================================
+   PILOT LOGIN PORTAL INTERFACE
+   ========================================== */
+.menu-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.98);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    z-index: 1000;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+.menu-overlay h1 {
+    font-size: 44px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 2px;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    margin-bottom: 10px;
+}
+
+.input-prompt-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.text-input {
+    padding: 15px 25px;
+    background: #1e293b;
+    border: 2px solid #475569;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    text-align: center;
+    width: 360px;
+    transition: 0.25s;
+}
+.text-input:focus { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+
+.mode-selection-row {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 5px 0;
+}
+
+.mode-card {
+    background: rgba(56, 189, 248, 0.05);
+    border: 2px solid #38bdf8;
+    border-radius: 12px;
+    padding: 22px;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+.mode-card h3 { font-size: 20px; margin-bottom: 8px; color: #38bdf8; }
+.mode-card p { font-size: 14px; color: #94a3b8; line-height: 1.5; }
+
+/* Homepage Leaderboard Section */
+.homepage-leaderboard {
+    width: 100%;
+    max-width: 500px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 10px;
+}
+.homepage-leaderboard h3 {
+    color: #38bdf8;
+    margin-bottom: 12px;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+.homepage-leaderboard ol {
+    color: #f8fafc;
+    padding-left: 20px;
+    font-size: 15px;
+    line-height: 1.8;
+    font-family: monospace;
+}
+.homepage-leaderboard li span {
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+.menu-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    max-width: 500px;
+}
+
+.launch-btn {
+    background: #ff3030;
+    color: #ffffff;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 20px rgba(255, 48, 48, 0.4);
+}
+.launch-btn:hover { background: #ff5252; transform: scale(1.02); }
+
+.back-btn-home, .rank-btn {
+    background: #475569;
+    color: #ffffff;
+    border: none;
+    padding: 14px 25px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.back-btn-home:hover, .rank-btn:hover { background: #64748b; transform: scale(1.02); }
+.rank-btn { background: #0284c7; }
+.rank-btn:hover { background: #0369a1; }
+</style>
+
+<script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+      "firebase/analytics": "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js",
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js"
+    }
+  }
+</script>
+</head>
+<body>
+
+<div class="menu-overlay" id="menu-gateway">
+    <h1 id="menu-title">APEX HORIZON: GP SIMULATION</h1>
+    
+    <div class="input-prompt-box" id="login-block">
+        <input type="text" id="username-input" class="text-input" placeholder="Enter Pilot Name Handle (Letters Only)" autocomplete="off" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+        <button class="launch-btn" id="gateway-action-btn" style="margin-top: 20px;">Authenticate Profile</button>
+    </div>
+
+    <div class="mode-selection-row" id="mode-block" style="display: none;">
+        <div class="mode-card">
+            <h3>Lap Times</h3>
+            <p>Record solo live lap telemetry on the custom sketch layout. Push the limits on the curbs for maximum lap speed!</p>
+        </div>
+    </div>
+
+    <div class="homepage-leaderboard" id="homepage-leaderboard-block" style="display: none;">
+        <h3>Top Timings</h3>
+        <ol id="homepage-score-list">
+            <li style="color:#94a3b8; font-style: italic; list-style: none; padding: 0; margin: 0;">Loading global standings...</li>
+        </ol>
+        <div id="personal-stats-home" class="personal-stats-panel"></div>
+    </div>
+
+    <div class="menu-action-buttons" id="menu-action-buttons" style="display: none;">
+        <button class="back-btn-home" id="back-to-login-btn">Back</button>
+        <button class="rank-btn" id="check-rank-btn">Check My Rank</button>
+        <button class="launch-btn" id="launch-sim-btn">Launch Simulation</button>
+    </div>
+</div>
+
+<div id="hud" style="display: none;">
+    <div id="speed">0 KM/H</div>
+    <div id="lap">LAP TIME : 00:00.000</div>
+    <div id="controls">
+        W / ↑ = Accelerate<br>
+        S / ↓ = Brake<br>
+        A / ← = Left<br>
+        D / → = Right<br>
+        SPACE = Reset Car
+    </div>
+    
+    <div id="hud-top-right">
+        <button class="hud-back-btn" id="exit-sim-btn">Back to Homepage</button>
+        <div id="leaderboard">
+            <h2>TOP 10 DRIVERS</h2>
+            <ol id="scoreList">
+                <li>Complete a valid lap</li>
+            </ol>
+            <div id="personal-stats-hud" class="personal-stats-panel"></div>
+        </div>
+    </div>
+
+    <div id="message">LAP DISQUALIFIED</div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore, collection, addDoc, orderBy, query, onSnapshot, serverTimestamp } from "firebase/firestore";
+
+// ==========================================
+// FIREBASE APP CONFIGURATION & INITIALIZATION
+// ==========================================
+const firebaseConfig = {
+    apiKey: "AIzaSyAqVWLXd1gOWa2Rq18fpKo1-YCNUDY9x9w",
+    authDomain: "f1-race-5dc43.firebaseapp.com",
+    projectId: "f1-race-5dc43",
+    storageBucket: "f1-race-5dc43.firebasestorage.app",
+    messagingSenderId: "343303312473",
+    appId: "1:343303312473:web:2c4da0ac56c98945e3cd48",
+    measurementId: "G-MWBRP455DQ"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+
+// ==========================================
+// SESSION STATE VARIABLES
+// ==========================================
+let userAuthenticated = false;
+let gameRunning = false;
+let activePilotName = "YOU";
+let globalBestTimes = [];
+
+// Listener grabs all laps so we can properly filter unique pilots for rankings
+const recordsRef = collection(db, "lap_records");
+const recordsQuery = query(recordsRef, orderBy("time", "asc"));
+
+onSnapshot(recordsQuery, (snapshot) => {
+    globalBestTimes = [];
+    snapshot.forEach((doc) => {
+        globalBestTimes.push(doc.data());
+    });
+    updateLeaderboardsUI();
+}, (error) => {
+    console.error("Leaderboard synchronization exception: ", error);
+});
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+const formatTime = (time) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    const ms = Math.floor((time % 1) * 1000);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+};
+
+// This function filters the raw lap data into a list of UNIQUE drivers and their absolute best lap
+function getUniqueLeaderboard() {
+    const allSorted = [...globalBestTimes].sort((a, b) => a.time - b.time);
+    const pilotBests = {};
+    
+    allSorted.forEach(record => {
+        // Because the array is already sorted fastest to slowest, 
+        // the first time we see a pilot's name, it is guaranteed to be their fastest lap
+        if (!pilotBests[record.pilot]) {
+            pilotBests[record.pilot] = record;
+        }
+    });
+    
+    // Return an array of these unique bests, sorted by time
+    return Object.values(pilotBests).sort((a, b) => a.time - b.time);
+}
+
+// ==========================================
+// CORE GRAPHICS SCENE SETUP
+// ==========================================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x666666, 1.5);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xffffff, 2.0);
+sun.position.set(200, 400, 200);
+sun.castShadow = true;
+scene.add(sun);
+
+const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(20000, 20000),
+    new THREE.MeshStandardMaterial({ color: 0x5fc45f, roughness: 0.9 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ==========================================
+// CUSTOM SKETCH LAYOUT MAPPING 
+// ==========================================
+const trackWaypoints = [
+    new THREE.Vector3(0, 0, 150),
+    new THREE.Vector3(80, 0, 150),
+    new THREE.Vector3(160, 0, 100),
+    new THREE.Vector3(160, 0, 20),
+    new THREE.Vector3(100, 0, -30),
+    new THREE.Vector3(140, 0, -100),
+    new THREE.Vector3(80, 0, -180),
+    new THREE.Vector3(0, 0, -180),
+    new THREE.Vector3(-100, 0, -180),
+    new THREE.Vector3(-180, 0, -120),
+    new THREE.Vector3(-150, 0, -40),
+    new THREE.Vector3(-140, 0, 40),
+    new THREE.Vector3(-90, 0, 120),
+    new THREE.Vector3(-30, 0, 145)
+];
+
+const trackCurve = new THREE.CatmullRomCurve3(trackWaypoints, true);
+const TRACK_WIDTH = 14;
+const HIGH_RES_SEGMENTS = 1000; 
+const collisionPoints = trackCurve.getSpacedPoints(HIGH_RES_SEGMENTS); 
+
+function buildTrack() {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [];
+    const indices = [];
+    const normals = [];
+    const uvs = [];
+
+    for (let i = 0; i <= HIGH_RES_SEGMENTS; i++) {
+        const t = i / HIGH_RES_SEGMENTS;
+        const center = trackCurve.getPointAt(t);
+        const tangent = trackCurve.getTangentAt(t).normalize();
+        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+        const left = center.clone().add(normal.clone().multiplyScalar(TRACK_WIDTH / 2));
+        const right = center.clone().add(normal.clone().multiplyScalar(-TRACK_WIDTH / 2));
+
+        vertices.push(left.x, 0.05, left.z);
+        vertices.push(right.x, 0.05, right.z);
+
+        normals.push(0, 1, 0, 0, 1, 0);
+        uvs.push(0, t * 15, 1, t * 15);
+    }
+
+    for (let i = 0; i < HIGH_RES_SEGMENTS; i++) {
+        const a = i * 2;
+        const b = i * 2 + 1;
+        const c = (i + 1) * 2;
+        const d = (i + 1) * 2 + 1;
+        indices.push(a, b, c);
+        indices.push(b, d, c);
+    }
+
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+
+    const road = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x7a7a7a, roughness: 0.95 }));
+    road.receiveShadow = true;
+    road.frustumCulled = false; 
+    scene.add(road);
+
+    createRoadLines();
+    createKerbs();
+    createBarriers();
+    createSketchDecorations(); 
+}
+
+buildTrack();
+
+const startPos = trackCurve.getPointAt(0);
+const startTan = trackCurve.getTangentAt(0).normalize();
+const startNormal = new THREE.Vector3(-startTan.z, 0, startTan.x).normalize();
+
+for (let i = -5; i <= 5; i++) {
+    const checkLine = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.02, 5.0),
+        new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0xffffff : 0x111111 })
+    );
+    checkLine.position.copy(startPos).addScaledVector(startNormal, i * 1.3);
+    checkLine.position.y = 0.06;
+    checkLine.lookAt(startPos.clone().add(startTan));
+    scene.add(checkLine);
+}
+
+function createRoadLines() {
+    for (let i = 0; i < 400; i++) {
+        const t = i / 400;
+        const pt = trackCurve.getPointAt(t);
+        const tan = trackCurve.getTangentAt(t);
+        const marker = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.02, 4), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        marker.position.copy(pt).setY(0.055);
+        marker.lookAt(pt.clone().add(tan));
+        scene.add(marker);
+    }
+}
+
+function createKerbs() {
+    for (let i = 0; i < 400; i++) {
+        const t = i / 400;
+        const center = trackCurve.getPointAt(t);
+        const tangent = trackCurve.getTangentAt(t).normalize();
+        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+        makeKerb(center, normal, 1, i);
+        makeKerb(center, normal, -1, i);
+    }
+}
+
+function makeKerb(center, normal, side, index) {
+    const kerb = new THREE.Mesh(
+        new THREE.BoxGeometry(2.0, 0.08, 1.4),
+        new THREE.MeshStandardMaterial({ color: index % 2 === 0 ? 0xffffff : 0xff3300, roughness: 0.6 })
+    );
+    kerb.position.copy(center).addScaledVector(normal, side * (TRACK_WIDTH / 2 + 0.6)).setY(0.051);
+    kerb.lookAt(center.clone().add(normal));
+    scene.add(kerb);
+}
+
+function createBarriers() {
+    for (let i = 0; i < 400; i++) {
+        const t = i / 400;
+        const center = trackCurve.getPointAt(t);
+        const tangent = trackCurve.getTangentAt(t).normalize();
+        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+        makeBarrier(center, normal, 1);
+        makeBarrier(center, normal, -1);
+    }
+}
+
+function makeBarrier(center, normal, side) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(5.1, 1.8, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+    wall.position.copy(center).addScaledVector(normal, side * (TRACK_WIDTH / 2 + 5.0)).setY(0.9);
+    wall.lookAt(center.clone().add(normal));
+    scene.add(wall);
+}
+
+function createSketchDecorations() {
+    const pinkMat = new THREE.MeshStandardMaterial({ color: 0xff69b4, roughness: 0.9 });
+    const blueMat = new THREE.MeshStandardMaterial({ color: 0x4169e1, roughness: 0.9 });
+
+    for(let i=150; i<250; i++) {
+        const t = i / 1000;
+        const pt = trackCurve.getPointAt(t);
+        const tan = trackCurve.getTangentAt(t).normalize();
+        const normal = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 0.04, 5), pinkMat);
+        mesh.position.copy(pt).addScaledVector(normal, -11);
+        mesh.lookAt(pt.clone().add(normal));
+        scene.add(mesh);
+    }
+
+    for(let i=350; i<450; i++) {
+        const t = i / 1000;
+        const pt = trackCurve.getPointAt(t);
+        const tan = trackCurve.getTangentAt(t).normalize();
+        const normal = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 0.04, 5), blueMat);
+        mesh.position.copy(pt).addScaledVector(normal, 12);
+        mesh.lookAt(pt.clone().add(normal));
+        scene.add(mesh);
+    }
+
+    for(let i=650; i<750; i++) {
+        const t = i / 1000;
+        const pt = trackCurve.getPointAt(t);
+        const tan = trackCurve.getTangentAt(t).normalize();
+        const normal = new THREE.Vector3(-tan.z, 0, tan.x).normalize();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 0.04, 5), pinkMat);
+        mesh.position.copy(pt).addScaledVector(normal, 11);
+        mesh.lookAt(pt.clone().add(normal));
+        scene.add(mesh);
+    }
+}
+
+// DRIVER VEHICLE COMPARTMENT MODEL ASSET
+const playerCar = new THREE.Group();
+const redMat = new THREE.MeshStandardMaterial({ color: 0xff1e27, metalness: 0.8, roughness: 0.2 });
+const blackMat = new THREE.MeshStandardMaterial({ color: 0x15151c, roughness: 0.8 });
+
+const monocoque = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.45, 4.2), redMat);
+monocoque.position.y = 0.4;
+playerCar.add(monocoque);
+
+const frontNose = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.25, 2.0), redMat); frontNose.position.set(0, 0.3, 2.5); playerCar.add(frontNose);
+const driverAero = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 1.4), blackMat); driverAero.position.set(0, 0.8, 0.1); playerCar.add(driverAero);
+const wingSpoil = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.6), blackMat); wingSpoil.position.set(0, 0.95, -2.1); playerCar.add(wingSpoil);
+
+const wheels = [];
+function addWheel(x, z) {
+    const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.55, 24);
+    geo.rotateZ(Math.PI / 2);
+    const wheel = new THREE.Mesh(geo, blackMat);
+    wheel.position.set(x, 0.35, z);
+    playerCar.add(wheel);
+    wheels.push(wheel);
+}
+addWheel(-0.85, 1.4); addWheel(0.85, 1.4); addWheel(-0.9, -1.3); addWheel(0.9, -1.3);
+scene.add(playerCar);
+
+let speed = 0;
+const MAX_SPEED = 2.45; 
+let lapStartTime = performance.now();
+let crossed = false;
+let isResetting = false;
+
+function resetCar() {
+    playerCar.position.copy(startPos).setY(0.4); 
+    playerCar.rotation.set(0, 0, 0);
+    playerCar.lookAt(startPos.clone().add(startTan));
+    speed = 0;
+    lapStartTime = performance.now();
+    isResetting = false;
+    document.getElementById("message").style.display = "none";
+}
+resetCar();
+
+// ==========================================
+// EXPLICIT EVENT LISTENERS
+// ==========================================
+document.getElementById('gateway-action-btn').addEventListener('click', () => {
+    const handleIn = document.getElementById('username-input').value.trim();
+    if(!handleIn) { alert("Please provide a valid driver handle name."); return; }
+    
+    activePilotName = handleIn.toUpperCase();
+    userAuthenticated = true;
+
+    document.getElementById('login-block').style.display = 'none';
+    document.getElementById('menu-title').innerText = "RACE REGISTRATION INTERFACE";
+    document.getElementById('mode-block').style.display = 'flex';
+    document.getElementById('homepage-leaderboard-block').style.display = 'block';
+    document.getElementById('menu-action-buttons').style.display = 'flex';
+
+    updateLeaderboardsUI();
+});
+
+document.getElementById('back-to-login-btn').addEventListener('click', () => {
+    userAuthenticated = false;
+    document.getElementById('login-block').style.display = 'flex';
+    document.getElementById('menu-title').innerText = "APEX HORIZON: GP SIMULATION";
+    document.getElementById('mode-block').style.display = 'none';
+    document.getElementById('homepage-leaderboard-block').style.display = 'none';
+    document.getElementById('menu-action-buttons').style.display = 'none';
+});
+
+// "Check My Rank" Button Logic (Now uses Unique Ranks)
+document.getElementById('check-rank-btn').addEventListener('click', () => {
+    const uniqueSortedTimes = getUniqueLeaderboard();
+    let myBestTime = null;
+    let myRank = null;
+
+    for (let i = 0; i < uniqueSortedTimes.length; i++) {
+        if (uniqueSortedTimes[i].pilot === activePilotName) {
+            myBestTime = uniqueSortedTimes[i].time;
+            myRank = i + 1; 
+            break;
+        }
+    }
+
+    if (myRank) {
+        let diffText = "";
+        if (myRank === 1) {
+            diffText = "You hold the World Record!";
+        } else {
+            const gap = (myBestTime - uniqueSortedTimes[0].time).toFixed(3);
+            diffText = `You are +${gap}s behind the #1 spot.`;
+        }
+        alert(`DRIVER: ${activePilotName}\nRANK: #${myRank}\nBEST LAP: ${formatTime(myBestTime)}\n\n${diffText}`);
+    } else {
+        alert("You have not recorded a valid lap time yet! Hit the track to get ranked.");
+    }
+});
+
+document.getElementById('launch-sim-btn').addEventListener('click', () => {
+    document.getElementById('menu-gateway').style.display = 'none';
+    document.getElementById('hud').style.display = 'block';
+    resetCar();
+    gameRunning = true;
+    animate();
+});
+
+document.getElementById('exit-sim-btn').addEventListener('click', () => {
+    gameRunning = false;
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('menu-gateway').style.display = 'flex';
+    updateLeaderboardsUI();
+});
+
+const keys = {};
+window.addEventListener("keydown", (e) => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.code === "Space" && gameRunning) resetCar();
+});
+window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+
+function getClosestTrackDistance(position) {
+    let min = Infinity;
+    for (let i = 0; i < collisionPoints.length; i++) {
+        const d = position.distanceTo(collisionPoints[i]);
+        if (d < min) min = d;
+    }
+    return min;
+}
+
+function updatePhysics() {
+    if (isResetting || !gameRunning) return;
+
+    if (keys["w"] || keys["arrowup"]) speed += 0.007;
+    if (keys["s"] || keys["arrowdown"]) speed -= 0.015;
+
+    speed *= 0.994;
+    speed = THREE.MathUtils.clamp(speed, -0.4, MAX_SPEED);
+
+    const steering = 0.022 * (0.4 + (1 - Math.min(Math.abs(speed) / MAX_SPEED, 1)));
+    if (keys["a"] || keys["arrowleft"]) playerCar.rotation.y += steering;
+    if (keys["d"] || keys["arrowright"]) playerCar.rotation.y -= steering;
+
+    playerCar.position.x += Math.sin(playerCar.rotation.y) * speed;
+    playerCar.position.z += Math.cos(playerCar.rotation.y) * speed;
+    
+    playerCar.rotation.x = 0;
+    playerCar.rotation.z = 0;
+    playerCar.position.y = 0.4;
+
+    wheels.forEach(w => { 
+        w.rotation.x += speed * 0.8;
+        w.rotation.y = 0; 
+        w.rotation.z = 0; 
+    });
+
+    const currentTrackOffset = getClosestTrackDistance(playerCar.position);
+
+    if (currentTrackOffset > (TRACK_WIDTH / 2 + 1.8)) {
+        speed *= 0.94; 
+    } else if (currentTrackOffset > (TRACK_WIDTH / 2)) {
+        speed *= 0.99; 
+    }
+
+    if (currentTrackOffset > (TRACK_WIDTH / 2 + 3.5)) {
+        if (!isResetting) {
+            isResetting = true;
+            speed = 0;
+            document.getElementById("message").style.display = "block"; 
+            
+            setTimeout(() => {
+                resetCar();
+            }, 1000);
+        }
+    }
+}
+
+function updateLeaderboardsUI() {
+    // Replace old "sortedTimes" with our new unique pilot filtered list
+    const uniqueSortedTimes = getUniqueLeaderboard();
+    
+    // --- PERSONAL STATS CALCULATION ---
+    let myBestTime = null;
+    let myRank = "N/A";
+
+    for (let i = 0; i < uniqueSortedTimes.length; i++) {
+        if (uniqueSortedTimes[i].pilot === activePilotName) {
+            myBestTime = uniqueSortedTimes[i].time;
+            myRank = i + 1; 
+            break;
+        }
+    }
+
+    const statsString = myBestTime 
+        ? `⭐ YOUR BEST LAP: ${formatTime(myBestTime)}  |  RANK: #${myRank} ⭐` 
+        : `⚠️ YOU HAVE NO RECORDED LAPS YET ⚠️`;
+
+    // 1. Update Homepage Leaderboard (Top 5 Unique Drivers)
+    const homeList = document.getElementById("homepage-score-list");
+    if (homeList) {
+        homeList.innerHTML = "";
+        if (uniqueSortedTimes.length === 0) {
+            homeList.innerHTML = "<li style='color:#94a3b8; font-style: italic; list-style:none;'>No timings recorded yet. Complete a lap to set a record!</li>";
+        } else {
+            uniqueSortedTimes.slice(0, 5).forEach((record, index) => {
+                const li = document.createElement("li");
+                li.innerHTML = `${index + 1}. ${record.pilot} - <span>${formatTime(record.time)}</span>`;
+                homeList.appendChild(li);
+            });
+        }
+    }
+    // Update Personal Display on Homepage
+    const homeStats = document.getElementById("personal-stats-home");
+    if (homeStats) homeStats.innerText = userAuthenticated ? statsString : "";
+
+    // 2. Update In-Game HUD Leaderboard (Top 10 Unique Drivers)
+    const hudList = document.getElementById("scoreList");
+    if (hudList) {
+        hudList.innerHTML = "";
+        if (uniqueSortedTimes.length === 0) {
+            hudList.innerHTML = "<li>Complete a valid lap</li>";
+        } else {
+            uniqueSortedTimes.slice(0, 10).forEach((record, index) => {
+                const li = document.createElement("li");
+                li.innerText = `${index + 1}. ${record.pilot} - ${formatTime(record.time)}`;
+                if (record.pilot === activePilotName) li.style.color = "#38bdf8"; 
+                hudList.appendChild(li);
+            });
+        }
+    }
+    // Update Personal Display on HUD
+    const hudStats = document.getElementById("personal-stats-hud");
+    if (hudStats) hudStats.innerText = statsString;
+}
+
+function animate() {
+    if(!gameRunning) return;
+    requestAnimationFrame(animate);
+    updatePhysics();
+
+    const distanceToStart = playerCar.position.distanceTo(startPos);
+    if (distanceToStart < 22) { 
+        if (!crossed) {
+            crossed = true;
+            const lapTime = (performance.now() - lapStartTime) / 1000;
+            if (lapTime > 6 && !isResetting) {
+                addDoc(collection(db, "lap_records"), {
+                    pilot: activePilotName,
+                    time: lapTime,
+                    timestamp: serverTimestamp()
+                }).catch(err => console.error("Database commit failure: ", err));
+            }
+            lapStartTime = performance.now();
+        }
+    } else {
+        crossed = false;
+    }
+
+    const camX = playerCar.position.x - Math.sin(playerCar.rotation.y) * 14;
+    const camZ = playerCar.position.z - Math.cos(playerCar.rotation.y) * 14;
+
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, camX, 0.1);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, camZ, 0.1);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, 4.5, 0.1);
+    camera.lookAt(playerCar.position.x, playerCar.position.y + 0.5, playerCar.position.z);
+
+    const kmh = Math.abs(Math.round((speed / MAX_SPEED) * 341));
+    document.getElementById("speed").innerText = kmh + " KM/H";
+
+    const lap = (performance.now() - lapStartTime) / 1000;
+    const mins = Math.floor(lap / 60);
+    const secs = Math.floor(lap % 60);
+    const ms = Math.floor((lap % 1) * 1000);
+    document.getElementById("lap").innerText = `LAP TIME : ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+
+    renderer.render(scene, camera);
+}
+
+playerCar.position.copy(startPos).setY(0.4);
+playerCar.lookAt(startPos.clone().add(startTan));
+renderer.render(scene, camera);
+updateLeaderboardsUI(); 
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if(!gameRunning) renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
