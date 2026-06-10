@@ -293,6 +293,7 @@ canvas {
     
     <div class="input-prompt-box" id="login-block">
         <input type="text" id="username-input" class="text-input" placeholder="Enter Pilot Name Handle (Letters Only)" autocomplete="off" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+        <input type="password" id="password-input" class="text-input" placeholder="Enter Password" autocomplete="off">
         <button class="launch-btn" id="gateway-action-btn" style="margin-top: 20px;">Authenticate Profile</button>
     </div>
 
@@ -672,7 +673,9 @@ resetCar();
 // ==========================================
 document.getElementById('gateway-action-btn').addEventListener('click', () => {
     const handleIn = document.getElementById('username-input').value.trim();
+    const passIn = document.getElementById('password-input').value.trim();
     if(!handleIn) { alert("Please provide a valid driver handle name."); return; }
+    if(!passIn) { alert("Please provide a password."); return; }
     
     activePilotName = handleIn.toUpperCase();
     userAuthenticated = true;
@@ -688,6 +691,7 @@ document.getElementById('gateway-action-btn').addEventListener('click', () => {
 
 document.getElementById('back-to-login-btn').addEventListener('click', () => {
     userAuthenticated = false;
+    document.getElementById('password-input').value = '';
     document.getElementById('login-block').style.display = 'flex';
     document.getElementById('menu-title').innerText = "APEX HORIZON: GP SIMULATION";
     document.getElementById('mode-block').style.display = 'none';
